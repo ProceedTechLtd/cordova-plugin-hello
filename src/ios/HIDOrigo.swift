@@ -2,8 +2,10 @@ import UIKit
 import OrigoSDK
 import CoreLocation
 import AudioToolbox
+import Cordova
 
-class OrigoKeyController: NSObject {
+@objc(HIDOrigo)
+class OrigoKeyController: NSObject, CDVPlugin {
 
     static var shared = OrigoKeyController()
     var origoKeysManager: OrigoKeysManager?
@@ -53,20 +55,35 @@ class OrigoKeyController: NSObject {
           return OrigoKeysManager(delegate: self, options: config)
 
     }
-  
-    func healthCheck(){
-    
-            let walletHealthCheck = origoKeysManager?.walletHealthCheck()
-            for mkit: NSNumber in walletHealthCheck as? [NSNumber] ?? []{
-                let type = (OrigoKeysWalletInfoType)(rawValue: mkit.intValue)
-                switch type {
-                case OrigoKeysWalletInfoType.typeSecureElementPassNotAvailable?:
-                    logger?.addLogEntry("Entitlement Not Available")
-                case OrigoKeysWalletInfoType.typeMainWindowNotAvailable?:
-                    logger?.addLogEntry("Main Window Not Available")
-                default:
-                    break
-                }
+
+    @objc(healthCheck:)
+    func healthCheck(_ command: CDVInvokedUrlCommand){
+
+        let msg = ""
+        let walletHealthCheck = origoKeysManager?.walletHealthCheck()
+        for mkit: NSNumber in walletHealthCheck as? [NSNumber] ?? []{
+            let type = (OrigoKeysWalletInfoType)(rawValue: mkit.intValue)
+            switch type {
+            case OrigoKeysWalletInfoType.typeSecureElementPassNotAvailable?:
+                logger?.addLogEntry("Entitlement Not Available")
+                msg = "Entitlement Not Available"
+            case OrigoKeysWalletInfoType.typeMainWindowNotAvailable?:
+                logger?.addLogEntry("Main Window Not Available")
+                msg = "Main Window Not Available"
+            default:
+                msg = "All right"
+                break
             }
         }
+
+        let result = CDVPluginResult(
+            status: CDVCommandStatus_OK,
+            messageAs: msg
+        )
+
+        self.commandDelegate.send(
+            result,
+            callbackId: command.callbackId
+        )
+    }
 }
